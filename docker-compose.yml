@@ -1,0 +1,24 @@
+services:
+  proxy:
+    image: nginx:latest
+    restart: always
+    volumes:
+      - ./nginx/conf/:/etc/nginx/conf.d/:ro
+      - ./certbot/www:/var/www/certbot/:ro
+      - ./certbot/conf/:/etc/nginx/ssl/:ro
+
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./certbot/www/:/var/www/certbot/:rw
+      - ./certbot/conf/:/etc/letsencrypt/:rw
+
+
+  docker-registry:
+    image:  registry:latest
+    ports:
+      - 8443:5000
+    restart: always
+   
+      

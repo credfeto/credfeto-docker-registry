@@ -1,24 +1,13 @@
 services:
-  proxy:
-    image: nginx:latest
-    restart: always
-    volumes:
-      - ./nginx/conf/:/etc/nginx/conf.d/:ro
-      - ./certbot/www:/var/www/certbot/:ro
-      - ./certbot/conf/:/etc/nginx/ssl/:ro
-
-
-  certbot:
-    image: certbot/certbot:latest
-    volumes:
-      - ./certbot/www/:/var/www/certbot/:rw
-      - ./certbot/conf/:/etc/letsencrypt/:rw
-
 
   docker-registry:
-    image:  registry:latest
+    image: registry:latest
     ports:
-      - 8443:5000
+      - 5000:5000
     restart: always
-   
+    environment:
+      - REGISTRY_HTTP_SECRET=$REGISTRY_HTTP_SECRET
+    volumes:
+      - ./config.yml:/etc/docker/registry/config.yml:r
+      - /data/registry:/var/lib/registry
       

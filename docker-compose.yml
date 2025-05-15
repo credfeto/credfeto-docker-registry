@@ -10,7 +10,7 @@ services:
         condition: service_healthy
 
   docker-registry:
-    image: registry:latest
+    image: registry:2.8
     restart: always
     environment:
       - REGISTRY_HTTP_SECRET=$REGISTRY_HTTP_SECRET

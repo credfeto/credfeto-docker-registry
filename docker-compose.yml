@@ -2,6 +2,7 @@ services:
 
   cloudflare-proxy:
     image: cloudflare/cloudflared:latest
+    container_name: registry_cloudflare
     restart: always
     command: tunnel --no-autoupdate run --token $CLOUDFLARE_TUNNEL_TOKEN
     depends_on:
@@ -11,6 +12,7 @@ services:
 
   docker-registry:
     image: registry:latest
+    container_name: registry_docker
     restart: always
     environment:
       - REGISTRY_HTTP_SECRET=$REGISTRY_HTTP_SECRET

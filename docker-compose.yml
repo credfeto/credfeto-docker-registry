@@ -17,6 +17,8 @@ services:
     environment:
       - REGISTRY_HTTP_SECRET=$REGISTRY_HTTP_SECRET
       - OTEL_TRACES_EXPORTER=none
+    ports:
+      - "8080:5000/tcp"
     volumes:
       - ./config.yml:/etc/docker/registry/config.yml:r
       - /data/registry:/var/lib/registry

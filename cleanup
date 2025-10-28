@@ -1,0 +1,80 @@
+#!/bin/bash
+
+pacman -S --noconfirm jq curl
+
+# Configuration
+REGISTRY_URL="http://localhost:8080"
+KEEP_LAST_N=3
+DRY_RUN=false
+
+# Function to get tags for a repository
+get_tags() {
+    local repo=$1
+    local tags_json=$(curl -sf \
+        "$REGISTRY_URL/v2/$repo/tags/list")
+
+    if [ $? -eq 0 ] && [ ! -z "$tags_json" ]; then
+        echo "$tags_json" | jq -r '.tags[]?' 2>/dev/null || echo ""
+    else
+        echo ""
+    fi
+}
+
+# Function to get manifest digest
+get_digest() {
+    local repo=$1
+    local tag=$2
+    local digest=$(curl -sf -I \
+        -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+        "$REGISTRY_URL/v2/$repo/manifests/$tag" | grep Docker-Content-Digest | awk '{print $2}' | tr -d $'\r')
+    echo "$digest"
+}
+
+# Function to delete a tag
+delete_tag() {
+    local repo=$1
+    local digest=$2
+    if [ "$DRY_RUN" = true ]; then
+        echo "Would delete: $repo@$digest"
+    else
+        echo "Deleting: $repo@$digest"
+        curl -sf -X DELETE  \
+            "$REGISTRY_URL/v2/$repo/manifests/$digest"
+    fi
+}
+
+echo "Starting registry cleanup process..."
+
+# Process each repository
+for repo in $(curl -sf  "$REGISTRY_URL/v2/_catalog" | jq -r '.repositories[]'); do
+    echo "Processing repository: $repo"
+    tags_output=$(get_tags "$repo")
+
+    if [ -z "$tags_output" ]; then
+        continue
+    fi
+
+    readarray -t tags < <(echo "$tags_output" | sort -V)
+    total_tags=${#tags[@]}
+
+    if [ $total_tags -gt $KEEP_LAST_N ]; then
+        to_delete=$((total_tags - KEEP_LAST_N))
+        echo "Found $total_tags tags, keeping last $KEEP_LAST_N, will delete $to_delete"
+
+        for ((i=0; i<$to_delete; i++)); do
+            tag=${tags[$i]}
+            digest=$(get_digest "$repo" "$tag")
+
+            if [ ! -z "$digest" ]; then
+                delete_tag "$repo" "$digest"
+            fi
+        done
+    fi
+done
+
+echo "Cleanup process completed"
+
+if [ "$DRY_RUN" = false ]; then
+    echo "Running garbage collection..."
+    docker exec -it registry_docker /bin/registry garbage-collect /etc/docker/registry/config.yml
+fi

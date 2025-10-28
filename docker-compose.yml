@@ -21,9 +21,14 @@ services:
       - "8080:5000/tcp"
     volumes:
       - ./config.yml:/etc/docker/registry/config.yml:r
-      - /data/registry:/var/lib/registry
+      - registry-data:/var/lib/registry
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:5000/v2/ || exit 1
       interval: 5s
       timeout: 4s
       retries: 5
+
+volumes:
+  registry-data:
+    name: registry-data
+    external: true

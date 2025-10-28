@@ -2,4 +2,12 @@
 
 git pull
 
+[ -d /data/registry ] || sudo mkdir -p/data/registry
+
+sudo docker volume create \
+  --opt type=none \
+  --opt o=bind \
+  --opt device=/data/registry \
+  registry-data
+
 sudo docker compose pull && sudo docker compose up -d

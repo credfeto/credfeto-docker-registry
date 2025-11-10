@@ -19,9 +19,10 @@ services:
 #        condition: service_started
         condition: service_healthy
 
-  docker-registry:
+  registry:
     image: registry:latest
-    container_name: registry_docker
+    container_name: registry
+    hostname: registry_docker
     restart: always
     environment:
       - REGISTRY_HTTP_SECRET=$REGISTRY_HTTP_SECRET
@@ -37,9 +38,9 @@ services:
       timeout: 4s
       retries: 5
 
-  docker-cache:
+  cache:
     image: registry:latest
-    container_name: registry_cache
+    container_name: cache
     restart: always
     environment:
       - REGISTRY_HTTP_SECRET=$REGISTRY_HTTP_SECRET

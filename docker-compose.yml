@@ -31,6 +31,7 @@ services:
       - "8080:5000/tcp"
     volumes:
       - ./registry-config.yml:/etc/docker/registry/config.yml:r
+      - ./registry-config.yml:/etc/distribution/config.yml:r
       - registry-data:/var/lib/registry
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:5000/v2/ || exit 1
@@ -49,6 +50,7 @@ services:
       - "8081:5000/tcp"
     volumes:
       - ./cache-config.yml:/etc/docker/registry/config.yml:r
+      - ./cache-config.yml:/etc/distribution/config.yml:r
       - registry-cache-data:/var/lib/registry
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:5000/v2/ || exit 1

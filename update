@@ -3,7 +3,7 @@
 git pull
 
 [ -d /data/registry ] || sudo mkdir -p/data/registry
-[ -d /data/cache ] || sudo mkdir -p/data/cache
+[ -d /data/cache ] || sudo mkdir -p /data/cache
 
 sudo docker volume create \
   --opt type=none \

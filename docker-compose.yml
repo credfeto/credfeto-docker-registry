@@ -59,3 +59,6 @@ volumes:
   registry-data:
     name: registry-data
     external: true
+  registry-cache-data:
+    name: registry-cache-data
+    external: true

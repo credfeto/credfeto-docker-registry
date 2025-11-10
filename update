@@ -3,6 +3,7 @@
 git pull
 
 [ -d /data/registry ] || sudo mkdir -p/data/registry
+[ -d /data/cache ] || sudo mkdir -p/data/cache
 
 sudo docker volume create \
   --opt type=none \
@@ -10,4 +11,10 @@ sudo docker volume create \
   --opt device=/data/registry \
   registry-data
 
-sudo docker compose pull && sudo docker compose up -d
+sudo docker volume create \
+  --opt type=none \
+  --opt o=bind \
+  --opt device=/data/cache \
+  registry-cache-data
+
+sudo docker compose pull && sudo docker compose up -d --remove-orphans

@@ -9,9 +9,9 @@ services:
       WATCHTOWER_NOTIFICATIONS_HOSTNAME: linux-cache
       WATCHTOWER_POLL_INTERVAL: 3600
 
-  cloudflare-proxy:
+  cloudflare:
     image: cloudflare/cloudflared:latest
-    container_name: registry_cloudflare
+    container_name: cloudflare
     restart: always
     command: tunnel --no-autoupdate run --token $CLOUDFLARE_TUNNEL_TOKEN
     depends_on:

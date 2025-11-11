@@ -1,6 +1,6 @@
 services:
   watchtower:
-    image: containrrr/watchtower
+    image: git@github.com:funfair-tech/funfair-crypto-clients.git
     container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

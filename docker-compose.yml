@@ -48,6 +48,34 @@ services:
       timeout: 4s
       retries: 5
 
+  registry-gc:
+    image: registry:latest
+    container_name: registry-gc
+    depends_on:
+      registry:
+        condition: service_healthy
+    volumes:
+      - ./registry-gc.sh:/usr/local/bin/registry-gc.sh:r
+      - ./registry-config.yml:/etc/docker/registry/config.yml:r
+      - ./registry-config.yml:/etc/distribution/config.yml:r
+      - registry-data:/var/lib/registry
+    entrypoint: ["/bin/sh", "/usr/local/bin/registry-gc.sh"]
+    restart: always
+
+  cache-gc:
+    image: registry:latest
+    container_name: cache-gc
+    depends_on:
+      cache:
+        condition: service_healthy
+    volumes:
+      - ./cache-gc.sh:/usr/local/bin/cache-gc.sh:r
+      - ./cache-config.yml:/etc/docker/registry/config.yml:r
+      - ./cache-config.yml:/etc/distribution/config.yml:r
+      - registry-cache-data:/var/lib/registry
+    entrypoint: ["/bin/sh", "/usr/local/bin/cache-gc.sh"]
+    restart: always
+
 volumes:
   registry-data:
     name: registry-data

@@ -1,9 +1,10 @@
+---
 services:
   watchtower:
     image: nickfedor/watchtower:latest
     container_name: watchtower
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ${XDG_RUNTIME_DIR}/podman/podman.sock:/var/run/docker.sock:rw
     restart: always
     environment:
       WATCHTOWER_NOTIFICATIONS_HOSTNAME: linux-cache
@@ -20,8 +21,8 @@ services:
     ports:
       - "8080:5000/tcp"
     volumes:
-      - ./registry-config.yml:/etc/docker/registry/config.yml:r
-      - ./registry-config.yml:/etc/distribution/config.yml:r
+      - ./registry-config.yml:/etc/docker/registry/config.yml:ro
+      - ./registry-config.yml:/etc/distribution/config.yml:ro
       - registry-data:/var/lib/registry
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:5000/v2/ || exit 1
@@ -39,8 +40,8 @@ services:
     ports:
       - "8081:5000/tcp"
     volumes:
-      - ./cache-config.yml:/etc/docker/registry/config.yml:r
-      - ./cache-config.yml:/etc/distribution/config.yml:r
+      - ./cache-config.yml:/etc/docker/registry/config.yml:ro
+      - ./cache-config.yml:/etc/distribution/config.yml:ro
       - registry-cache-data:/var/lib/registry
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:5000/v2/ || exit 1
@@ -55,9 +56,9 @@ services:
       registry:
         condition: service_healthy
     volumes:
-      - ./registry-gc.sh:/usr/local/bin/registry-gc.sh:r
-      - ./registry-config.yml:/etc/docker/registry/config.yml:r
-      - ./registry-config.yml:/etc/distribution/config.yml:r
+      - ./registry-gc.sh:/usr/local/bin/registry-gc.sh:ro
+      - ./registry-config.yml:/etc/docker/registry/config.yml:ro
+      - ./registry-config.yml:/etc/distribution/config.yml:ro
       - registry-data:/var/lib/registry
     entrypoint: ["/bin/sh", "/usr/local/bin/registry-gc.sh"]
     restart: always
@@ -69,9 +70,9 @@ services:
       cache:
         condition: service_healthy
     volumes:
-      - ./cache-gc.sh:/usr/local/bin/cache-gc.sh:r
-      - ./cache-config.yml:/etc/docker/registry/config.yml:r
-      - ./cache-config.yml:/etc/distribution/config.yml:r
+      - ./cache-gc.sh:/usr/local/bin/cache-gc.sh:ro
+      - ./cache-config.yml:/etc/docker/registry/config.yml:ro
+      - ./cache-config.yml:/etc/distribution/config.yml:ro
       - registry-cache-data:/var/lib/registry
     entrypoint: ["/bin/sh", "/usr/local/bin/cache-gc.sh"]
     restart: always

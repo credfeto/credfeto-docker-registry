@@ -5,6 +5,7 @@ pacman -S --noconfirm jq curl
 # Configuration
 KEEP_LAST_N=3
 DRY_RUN=false
+REGISTRY_UID="$(id -u registry)"
 
 # Function to get tags for a repository
 get_tags() {
@@ -81,9 +82,11 @@ cleanup_registry() {
 
     if [ "$DRY_RUN" = false ]; then
         echo "Running garbage collection on ${container_name}..."
-        podman exec "${container_name}" /bin/registry garbage-collect --delete-untagged /etc/docker/registry/config.yml
+        sudo -u registry \
+            XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
+            podman exec "${container_name}" /bin/registry garbage-collect --delete-untagged /etc/docker/registry/config.yml
     fi
 }
 
-cleanup_registry "http://localhost:8080" "registry_docker"
+cleanup_registry "http://localhost:8080" "registry"
 cleanup_registry "http://localhost:8081" "cache"

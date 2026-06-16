@@ -2,6 +2,8 @@
 
 git pull
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 [ -d /data/registry ] || sudo mkdir -p /data/registry
 [ -d /data/cache ] || sudo mkdir -p /data/cache
 
@@ -13,16 +15,67 @@ sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address
 sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="172.16.0.0/12" port protocol="tcp" port="8081" accept'
 
 sudo firewall-cmd --reload
-podman volume create \
-  --opt type=none \
-  --opt o=bind \
-  --opt device=/data/registry \
-  registry-data
 
-podman volume create \
-  --opt type=none \
-  --opt o=bind \
-  --opt device=/data/cache \
-  registry-cache-data
+# Create a dedicated unprivileged system user to run the registry services
+if ! id -u registry > /dev/null 2>&1; then
+    sudo useradd --system --create-home --home-dir /var/lib/registry --shell /sbin/nologin registry
+fi
 
-podman compose pull && podman compose up -d --remove-orphans
+REGISTRY_UID="$(id -u registry)"
+
+# Enable lingering so the Podman runtime persists without an active login session
+sudo loginctl enable-linger registry
+
+# Grant the registry user ownership of the bind-mount source directories
+sudo chown registry:registry /data/registry /data/cache
+
+# Create Podman named volumes as the registry user
+sudo -u registry \
+    XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
+    podman volume create \
+        --opt type=none \
+        --opt o=bind \
+        --opt device=/data/registry \
+        registry-data 2>/dev/null || true
+
+sudo -u registry \
+    XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
+    podman volume create \
+        --opt type=none \
+        --opt o=bind \
+        --opt device=/data/cache \
+        registry-cache-data 2>/dev/null || true
+
+# Pull updated images before restarting
+sudo -u registry \
+    XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
+    podman compose --project-directory "${SCRIPT_DIR}" pull
+
+# Install or update the system-level systemd service unit
+sudo tee /etc/systemd/system/podman-registry.service << EOF > /dev/null
+[Unit]
+Description=Container Registry Stack (rootless Podman Compose)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=registry
+Group=registry
+WorkingDirectory=${SCRIPT_DIR}
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=HOME=/var/lib/registry
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus
+ExecStart=/usr/bin/podman compose up --remove-orphans
+ExecStop=/usr/bin/podman compose down
+Restart=on-failure
+RestartSec=10s
+TimeoutStartSec=120s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable podman-registry.service
+sudo systemctl restart podman-registry.service

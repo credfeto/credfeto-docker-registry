@@ -46,10 +46,26 @@ sudo -u registry \
         --opt device=/data/cache \
         registry-cache-data 2>/dev/null || true
 
+# Provision the secrets file for the systemd service
+SECRETS_FILE="/etc/registry/secrets.env"
+if [ -n "${REGISTRY_HTTP_SECRET:-}" ]; then
+    sudo mkdir -p /etc/registry
+    printf 'REGISTRY_HTTP_SECRET=%s\n' "${REGISTRY_HTTP_SECRET}" | sudo tee "${SECRETS_FILE}" > /dev/null
+    sudo chmod 600 "${SECRETS_FILE}"
+    sudo chown registry:registry "${SECRETS_FILE}"
+elif [ ! -f "${SECRETS_FILE}" ]; then
+    echo "ERROR: REGISTRY_HTTP_SECRET is not set and ${SECRETS_FILE} does not exist." >&2
+    echo "       Set REGISTRY_HTTP_SECRET in your environment and re-run, or create ${SECRETS_FILE} manually." >&2
+    exit 1
+fi
+
 # Pull updated images before restarting
 sudo -u registry \
     XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
-    podman compose --project-directory "${SCRIPT_DIR}" pull
+    podman compose --project-directory "${SCRIPT_DIR}" pull || {
+    echo "ERROR: podman compose pull failed; aborting service restart to avoid starting with stale images." >&2
+    exit 1
+}
 
 # Install or update the system-level systemd service unit
 sudo tee /etc/systemd/system/podman-registry.service << EOF > /dev/null
@@ -66,6 +82,7 @@ WorkingDirectory=${SCRIPT_DIR}
 Environment=XDG_RUNTIME_DIR=/run/user/%U
 Environment=HOME=/var/lib/registry
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus
+EnvironmentFile=${SECRETS_FILE}
 ExecStart=/usr/bin/podman compose up --remove-orphans
 ExecStop=/usr/bin/podman compose down
 Restart=on-failure

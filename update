@@ -21,7 +21,7 @@ if ! id -u registry > /dev/null 2>&1; then
     sudo useradd --system --create-home --home-dir /var/lib/registry --shell /sbin/nologin registry
 fi
 
-REGISTRY_UID="$(id -u registry)"
+REGISTRY_UID="$(id -u registry 2>/dev/null)" || { echo "ERROR: could not resolve registry UID after useradd" >&2; exit 1; }
 
 # Enable lingering so the Podman runtime persists without an active login session
 sudo loginctl enable-linger registry

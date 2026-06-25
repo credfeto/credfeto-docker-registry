@@ -5,7 +5,7 @@ pacman -S --noconfirm jq curl
 # Configuration
 KEEP_LAST_N=3
 DRY_RUN=false
-REGISTRY_UID="$(id -u registry)"
+REGISTRY_UID="$(id -u registry 2>/dev/null)" || { echo "ERROR: registry user not found; run the update script first" >&2; exit 1; }
 
 # Function to get tags for a repository
 get_tags() {

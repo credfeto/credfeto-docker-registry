@@ -82,7 +82,8 @@ WorkingDirectory=${SCRIPT_DIR}
 Environment=XDG_RUNTIME_DIR=/run/user/%U
 Environment=HOME=/var/lib/registry
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus
-EnvironmentFile=${SECRETS_FILE}
+EnvironmentFile=-${SECRETS_FILE}
+ExecStartPre=/bin/sh -c 'test -f ${SECRETS_FILE} || { echo "FATAL: ${SECRETS_FILE} is missing -- re-run the update script with REGISTRY_HTTP_SECRET set" >&2; exit 1; }'
 ExecStart=/usr/bin/podman compose up --remove-orphans
 ExecStop=/usr/bin/podman compose down
 Restart=on-failure

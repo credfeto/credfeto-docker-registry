@@ -4,7 +4,7 @@ services:
     image: nickfedor/watchtower:latest
     container_name: watchtower
     volumes:
-      - ${XDG_RUNTIME_DIR}/podman/podman.sock:/var/run/docker.sock:rw
+      - ${XDG_RUNTIME_DIR:?XDG_RUNTIME_DIR must be set (use the systemd service or export the variable)}/podman/podman.sock:/var/run/docker.sock:rw
     restart: always
     environment:
       WATCHTOWER_NOTIFICATIONS_HOSTNAME: linux-cache

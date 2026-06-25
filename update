@@ -36,7 +36,7 @@ sudo -u registry \
         --opt type=none \
         --opt o=bind \
         --opt device=/data/registry \
-        registry-data 2>/dev/null || true
+        registry-data || true
 
 sudo -u registry \
     XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
@@ -44,7 +44,7 @@ sudo -u registry \
         --opt type=none \
         --opt o=bind \
         --opt device=/data/cache \
-        registry-cache-data 2>/dev/null || true
+        registry-cache-data || true
 
 # Provision the secrets file for the systemd service
 SECRETS_FILE="/etc/registry/secrets.env"

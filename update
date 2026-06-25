@@ -29,6 +29,9 @@ sudo loginctl enable-linger registry
 # Grant the registry user ownership of the bind-mount source directories
 sudo chown registry:registry /data/registry /data/cache
 
+# Ensure the registry user can traverse the project directory (read compose file at service start)
+sudo chmod o+rx "${SCRIPT_DIR}"
+
 # Create Podman named volumes as the registry user
 sudo -u registry \
     XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
@@ -84,8 +87,8 @@ Environment=HOME=/var/lib/registry
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus
 EnvironmentFile=-${SECRETS_FILE}
 ExecStartPre=/bin/sh -c 'test -f ${SECRETS_FILE} || { echo "FATAL: ${SECRETS_FILE} is missing -- re-run the update script with REGISTRY_HTTP_SECRET set" >&2; exit 1; }'
-ExecStart=/usr/bin/podman compose up --remove-orphans
-ExecStop=/usr/bin/podman compose down
+ExecStart=/usr/bin/podman compose --project-directory ${SCRIPT_DIR} up --remove-orphans
+ExecStop=/usr/bin/podman compose --project-directory ${SCRIPT_DIR} down
 Restart=on-failure
 RestartSec=10s
 TimeoutStartSec=120s

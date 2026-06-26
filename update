@@ -52,6 +52,10 @@ sudo -u registry \
 # Provision the secrets file for the systemd service
 SECRETS_FILE="/etc/registry/secrets.env"
 if [ -n "${REGISTRY_HTTP_SECRET:-}" ]; then
+    case "${REGISTRY_HTTP_SECRET}" in
+        *"
+"*) echo "ERROR: REGISTRY_HTTP_SECRET must not contain newlines" >&2; exit 1;;
+    esac
     sudo mkdir -p /etc/registry
     printf 'REGISTRY_HTTP_SECRET=%s\n' "${REGISTRY_HTTP_SECRET}" | sudo tee "${SECRETS_FILE}" > /dev/null
     sudo chmod 600 "${SECRETS_FILE}"

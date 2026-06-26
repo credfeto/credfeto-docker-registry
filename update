@@ -95,7 +95,7 @@ sudo -u registry \
 sudo tee /etc/systemd/system/podman-registry.service << EOF > /dev/null
 [Unit]
 Description=Container Registry Stack (rootless Podman Compose)
-After=network-online.target
+After=network-online.target user@${REGISTRY_UID}.service
 Wants=network-online.target
 
 [Service]

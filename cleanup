@@ -82,17 +82,20 @@ cleanup_registry() {
 
     if [ "$DRY_RUN" = false ]; then
         echo "Running garbage collection on ${container_name}..."
-        # flock prevents concurrent GC with the compose-managed registry-gc
-        # container, which also runs garbage-collect on the same volume.
-        # Concurrent GC (mark-and-sweep without file locks) can corrupt the
-        # blob store.
-        flock --nonblock "/var/lock/registry-gc-${container_name}.lock" \
+        # flock serialises concurrent invocations of this cleanup script; it
+        # does NOT prevent concurrent GC from the compose-managed registry-gc
+        # container (which runs inside its own namespace with no access to
+        # this host-side lockfile).
+        if ! flock --nonblock "/var/lock/registry-gc-${container_name}.lock" \
             sudo -u registry \
                 XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
-                podman exec "${container_name}" /bin/registry garbage-collect --delete-untagged /etc/docker/registry/config.yml \
-            || { echo "ERROR: garbage collection failed for ${container_name} (another GC may be running)" >&2; exit 1; }
+                podman exec "${container_name}" /bin/registry garbage-collect --delete-untagged /etc/docker/registry/config.yml
+        then
+            echo "ERROR: garbage collection failed for ${container_name} (lock held by another process, or podman exec error)" >&2
+            return 1
+        fi
     fi
 }
 
-cleanup_registry "http://localhost:8080" "registry"
-cleanup_registry "http://localhost:8081" "cache"
+cleanup_registry "http://localhost:8080" "registry" || exit 1
+cleanup_registry "http://localhost:8081" "cache" || exit 1

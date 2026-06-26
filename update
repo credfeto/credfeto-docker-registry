@@ -32,8 +32,14 @@ sudo loginctl enable-linger registry
 # Grant the registry user ownership of the bind-mount source directories
 sudo chown registry:registry /data/registry /data/cache
 
-# Ensure the registry user can traverse the project directory (read compose file at service start)
-sudo chmod o+rx "${SCRIPT_DIR}"
+# Allow only the registry user to traverse SCRIPT_DIR; setfacl is preferred to
+# avoid making the directory world-readable (chmod o+rx exposes .git/ etc. to
+# all local users).
+if command -v setfacl > /dev/null 2>&1; then
+    sudo setfacl -m u:registry:rx "${SCRIPT_DIR}"
+else
+    sudo chmod o+rx "${SCRIPT_DIR}"
+fi
 
 # Create Podman named volumes as the registry user
 sudo -u registry \

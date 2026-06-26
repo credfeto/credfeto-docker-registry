@@ -1,12 +1,12 @@
 #! /bin/sh
 
-git pull
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 case "${SCRIPT_DIR}" in
     *[[:space:]]*) echo "ERROR: SCRIPT_DIR must not contain whitespace (path: ${SCRIPT_DIR})" >&2; exit 1;;
     *%*)           echo "ERROR: SCRIPT_DIR must not contain '%' — systemd interprets it as a specifier (path: ${SCRIPT_DIR})" >&2; exit 1;;
 esac
+
+git -C "${SCRIPT_DIR}" pull
 
 [ -d /data/registry ] || sudo mkdir -p /data/registry
 [ -d /data/cache ] || sudo mkdir -p /data/cache

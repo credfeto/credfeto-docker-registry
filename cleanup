@@ -82,9 +82,15 @@ cleanup_registry() {
 
     if [ "$DRY_RUN" = false ]; then
         echo "Running garbage collection on ${container_name}..."
-        sudo -u registry \
-            XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
-            podman exec "${container_name}" /bin/registry garbage-collect --delete-untagged /etc/docker/registry/config.yml
+        # flock prevents concurrent GC with the compose-managed registry-gc
+        # container, which also runs garbage-collect on the same volume.
+        # Concurrent GC (mark-and-sweep without file locks) can corrupt the
+        # blob store.
+        flock --nonblock "/var/lock/registry-gc-${container_name}.lock" \
+            sudo -u registry \
+                XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
+                podman exec "${container_name}" /bin/registry garbage-collect --delete-untagged /etc/docker/registry/config.yml \
+            || { echo "ERROR: garbage collection failed for ${container_name} (another GC may be running)" >&2; exit 1; }
     fi
 }
 

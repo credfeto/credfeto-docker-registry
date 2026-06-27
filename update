@@ -43,8 +43,8 @@ sudo chown registry:registry /data/registry /data/cache
 # Allow only the registry user to traverse SCRIPT_DIR; setfacl is preferred to
 # avoid making the directory world-readable (chmod o+rx exposes .git/ etc. to
 # all local users).
-if command -v setfacl > /dev/null 2>&1; then
-    sudo setfacl -m u:registry:rx "${SCRIPT_DIR}"
+if command -v setfacl > /dev/null 2>&1 && sudo setfacl -m u:registry:rx "${SCRIPT_DIR}" 2>/dev/null; then
+    :
 else
     sudo chmod o+rx "${SCRIPT_DIR}"
 fi

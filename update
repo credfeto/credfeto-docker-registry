@@ -57,12 +57,16 @@ sudo -u registry \
         --opt o=bind \
         --opt device=/data/registry \
         registry-data || true
-sudo -u registry \
+_reg_device=$(sudo -u registry \
     XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
-    podman volume inspect registry-data > /dev/null 2>&1 || {
-    echo "ERROR: registry-data volume not available after create — re-run this script once the registry user session is active (check: loginctl status registry)" >&2
+    podman volume inspect registry-data --format '{{index .Options "device"}}' 2>/dev/null) || {
+    echo "ERROR: registry-data volume not available — re-run this script once the registry user session is active (check: loginctl status registry)" >&2
     exit 1
 }
+if [ "${_reg_device}" != "/data/registry" ]; then
+    echo "ERROR: registry-data volume exists but uses device '${_reg_device}' instead of '/data/registry' — remove it with: sudo -u registry XDG_RUNTIME_DIR=/run/user/${REGISTRY_UID} podman volume rm registry-data" >&2
+    exit 1
+fi
 
 sudo -u registry \
     XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
@@ -71,12 +75,16 @@ sudo -u registry \
         --opt o=bind \
         --opt device=/data/cache \
         registry-cache-data || true
-sudo -u registry \
+_cache_device=$(sudo -u registry \
     XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
-    podman volume inspect registry-cache-data > /dev/null 2>&1 || {
-    echo "ERROR: registry-cache-data volume not available after create — re-run this script once the registry user session is active (check: loginctl status registry)" >&2
+    podman volume inspect registry-cache-data --format '{{index .Options "device"}}' 2>/dev/null) || {
+    echo "ERROR: registry-cache-data volume not available — re-run this script once the registry user session is active (check: loginctl status registry)" >&2
     exit 1
 }
+if [ "${_cache_device}" != "/data/cache" ]; then
+    echo "ERROR: registry-cache-data volume exists but uses device '${_cache_device}' instead of '/data/cache' — remove it with: sudo -u registry XDG_RUNTIME_DIR=/run/user/${REGISTRY_UID} podman volume rm registry-cache-data" >&2
+    exit 1
+fi
 
 # Provision the secrets file for the systemd service
 SECRETS_FILE="/etc/registry/secrets.env"

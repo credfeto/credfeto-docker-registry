@@ -29,6 +29,10 @@ REGISTRY_UID="$(id -u registry 2>/dev/null)" || { echo "ERROR: could not resolve
 
 # Enable lingering so the Podman runtime persists without an active login session
 sudo loginctl enable-linger registry
+sudo systemctl start "user@${REGISTRY_UID}.service" || {
+    echo "ERROR: could not start user session for registry (UID ${REGISTRY_UID}); check: journalctl -u user@${REGISTRY_UID}.service" >&2
+    exit 1
+}
 
 # Allow XDG_RUNTIME_DIR and DBUS_SESSION_BUS_ADDRESS to pass through sudo's
 # env_reset when running commands as the registry user; without this entry the

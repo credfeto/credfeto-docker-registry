@@ -57,6 +57,12 @@ sudo -u registry \
         --opt o=bind \
         --opt device=/data/registry \
         registry-data || true
+sudo -u registry \
+    XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
+    podman volume inspect registry-data > /dev/null 2>&1 || {
+    echo "ERROR: registry-data volume not available after create — re-run this script once the registry user session is active (check: loginctl status registry)" >&2
+    exit 1
+}
 
 sudo -u registry \
     XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
@@ -65,6 +71,12 @@ sudo -u registry \
         --opt o=bind \
         --opt device=/data/cache \
         registry-cache-data || true
+sudo -u registry \
+    XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
+    podman volume inspect registry-cache-data > /dev/null 2>&1 || {
+    echo "ERROR: registry-cache-data volume not available after create — re-run this script once the registry user session is active (check: loginctl status registry)" >&2
+    exit 1
+}
 
 # Provision the secrets file for the systemd service
 SECRETS_FILE="/etc/registry/secrets.env"

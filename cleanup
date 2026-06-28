@@ -86,14 +86,21 @@ cleanup_registry() {
         # does NOT prevent concurrent GC from the compose-managed registry-gc
         # container (which runs inside its own namespace with no access to
         # this host-side lockfile).
-        if ! flock --nonblock "/var/lock/registry-gc-${container_name}.lock" \
+        # A subshell with an fd-based lock lets us distinguish "lock busy"
+        # (safe skip, exit 0) from "podman exec failed" (error, exit non-zero).
+        (
+            exec 9>"/var/lock/registry-gc-${container_name}.lock"
+            if ! flock --nonblock 9; then
+                echo "WARNING: GC skipped for ${container_name} — another cleanup invocation holds the lock" >&2
+                exit 0
+            fi
             sudo -u registry \
                 XDG_RUNTIME_DIR="/run/user/${REGISTRY_UID}" \
                 podman exec "${container_name}" /bin/registry garbage-collect --delete-untagged /etc/docker/registry/config.yml
-        then
-            echo "ERROR: garbage collection failed for ${container_name} (lock held by another process, or podman exec error)" >&2
+        ) || {
+            echo "ERROR: garbage collection failed for ${container_name} — check: podman ps --filter name=${container_name}" >&2
             return 1
-        fi
+        }
     fi
 }
 

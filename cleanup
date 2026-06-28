@@ -27,7 +27,7 @@ get_digest() {
     local digest
     digest=$(curl -sf -I \
         -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
-        "$registry_url/v2/$repo/manifests/$tag" | grep Docker-Content-Digest | awk '{print $2}' | tr -d $'\r')
+        "$registry_url/v2/$repo/manifests/$tag" | grep -i Docker-Content-Digest | awk '{print $2}' | tr -d $'\r')
     echo "$digest"
 }
 

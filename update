@@ -33,7 +33,7 @@ sudo loginctl enable-linger registry
 # Allow XDG_RUNTIME_DIR and DBUS_SESSION_BUS_ADDRESS to pass through sudo's
 # env_reset when running commands as the registry user; without this entry the
 # default env_keep list strips those variables before podman sees them.
-printf 'Defaults>registry env_keep += "XDG_RUNTIME_DIR DBUS_SESSION_BUS_ADDRESS"\n' | \
+printf 'Defaults>registry env_keep += "XDG_RUNTIME_DIR DBUS_SESSION_BUS_ADDRESS"\nDefaults>registry setenv\n' | \
     sudo tee /etc/sudoers.d/10-registry-env > /dev/null
 sudo chmod 440 /etc/sudoers.d/10-registry-env
 

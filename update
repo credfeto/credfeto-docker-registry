@@ -118,6 +118,6 @@ TimeoutStartSec=120s
 WantedBy=multi-user.target
 EOF
 
-sudo systemctl daemon-reload
-sudo systemctl enable podman-registry.service
-sudo systemctl restart podman-registry.service
+sudo systemctl daemon-reload || { echo "ERROR: systemctl daemon-reload failed; the unit file may be malformed" >&2; exit 1; }
+sudo systemctl enable podman-registry.service || { echo "ERROR: systemctl enable failed" >&2; exit 1; }
+sudo systemctl restart podman-registry.service || { echo "ERROR: systemctl restart failed; check: journalctl -u podman-registry.service" >&2; exit 1; }

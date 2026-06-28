@@ -6,7 +6,7 @@ case "${SCRIPT_DIR}" in
     *%*)           echo "ERROR: SCRIPT_DIR must not contain '%' — systemd interprets it as a specifier (path: ${SCRIPT_DIR})" >&2; exit 1;;
 esac
 
-git -C "${SCRIPT_DIR}" pull
+git -C "${SCRIPT_DIR}" pull || { echo "ERROR: git pull failed; aborting to avoid deploying stale files" >&2; exit 1; }
 
 [ -d /data/registry ] || sudo mkdir -p /data/registry
 [ -d /data/cache ] || sudo mkdir -p /data/cache

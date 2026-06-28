@@ -97,5 +97,7 @@ cleanup_registry() {
     fi
 }
 
-cleanup_registry "http://localhost:8080" "registry" || exit 1
-cleanup_registry "http://localhost:8081" "cache" || exit 1
+exit_code=0
+cleanup_registry "http://localhost:8080" "registry" || exit_code=$?
+cleanup_registry "http://localhost:8081" "cache" || exit_code=$?
+exit "${exit_code}"

@@ -104,7 +104,7 @@ sudo -u registry \
 }
 
 # Install or update the system-level systemd service unit
-sudo tee /etc/systemd/system/podman-registry.service << EOF > /dev/null
+sudo tee /etc/systemd/system/podman-registry.service << EOF > /dev/null || { echo "ERROR: failed to write systemd unit file" >&2; exit 1; }
 [Unit]
 Description=Container Registry Stack (rootless Podman Compose)
 After=network-online.target user@${REGISTRY_UID}.service

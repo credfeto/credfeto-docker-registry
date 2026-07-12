@@ -26,4 +26,3 @@ sudo docker volume create \
   registry-cache-data
 
 sudo docker compose pull && sudo docker compose up -d --remove-orphans
-

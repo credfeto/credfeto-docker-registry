@@ -7,30 +7,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
     environment:
-      WATCHTOWER_NOTIFICATIONS_HOSTNAME: linux-cache
+      WATCHTOWER_NOTIFICATIONS_HOSTNAME: docker-registry
       WATCHTOWER_POLL_INTERVAL: 3600
-
-  registry:
-    image: registry:latest
-    container_name: registry
-    hostname: registry_docker
-    restart: always
-    environment:
-      - REGISTRY_HTTP_SECRET=$REGISTRY_HTTP_SECRET
-      - OTEL_TRACES_EXPORTER=none
-    ports:
-      - "8080:5000/tcp"
-    volumes:
-      - ./registry-config.yml:/etc/docker/registry/config.yml:r
-      - ./registry-config.yml:/etc/distribution/config.yml:r
-      - registry-data:/var/lib/registry
-    healthcheck:
-      test: >
-        wget --no-verbose --tries=1 --spider
-        http://localhost:5000/v2/ || exit 1
-      interval: 5s
-      timeout: 4s
-      retries: 5
 
   cache:
     image: registry:latest
@@ -52,20 +30,6 @@ services:
       interval: 5s
       timeout: 4s
       retries: 5
-
-  registry-gc:
-    image: registry:latest
-    container_name: registry-gc
-    depends_on:
-      registry:
-        condition: service_healthy
-    volumes:
-      - ./registry-gc.sh:/usr/local/bin/registry-gc.sh:r
-      - ./registry-config.yml:/etc/docker/registry/config.yml:r
-      - ./registry-config.yml:/etc/distribution/config.yml:r
-      - registry-data:/var/lib/registry
-    entrypoint: ["/bin/sh", "/usr/local/bin/registry-gc.sh"]
-    restart: always
 
   cache-gc:
     image: registry:latest

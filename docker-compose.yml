@@ -8,7 +8,8 @@ services:
     restart: always
     environment:
       WATCHTOWER_NOTIFICATIONS_HOSTNAME: docker-registry
-      WATCHTOWER_POLL_INTERVAL: 3600
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_SCHEDULE: "${WATCHTOWER_SCHEDULE:-0 18 * * * *}"
 
   cache:
     image: registry:latest
@@ -20,8 +21,8 @@ services:
     ports:
       - "8081:5000/tcp"
     volumes:
-      - ./cache-config.yml:/etc/docker/registry/config.yml:r
-      - ./cache-config.yml:/etc/distribution/config.yml:r
+      - ./cache-config.yml:/etc/docker/registry/config.yml:ro
+      - ./cache-config.yml:/etc/distribution/config.yml:ro
       - registry-cache-data:/var/lib/registry
     healthcheck:
       test: >
@@ -38,9 +39,9 @@ services:
       cache:
         condition: service_healthy
     volumes:
-      - ./cache-gc.sh:/usr/local/bin/cache-gc.sh:r
-      - ./cache-config.yml:/etc/docker/registry/config.yml:r
-      - ./cache-config.yml:/etc/distribution/config.yml:r
+      - ./cache-gc.sh:/usr/local/bin/cache-gc.sh:ro
+      - ./cache-config.yml:/etc/docker/registry/config.yml:ro
+      - ./cache-config.yml:/etc/distribution/config.yml:ro
       - registry-cache-data:/var/lib/registry
     entrypoint: ["/bin/sh", "/usr/local/bin/cache-gc.sh"]
     restart: always

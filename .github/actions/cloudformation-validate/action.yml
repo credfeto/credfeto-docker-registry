@@ -1,0 +1,20 @@
+--- # Validate a CloudFormation template with AWS
+# Maintain in repo: funfair-server-template
+name: "Validate CloudFormation template"
+description: >-
+  Validate a CloudFormation template with AWS before it is deployed.
+  Callers must configure AWS credentials (e.g. aws-actions/configure-aws-credentials) before calling this action
+inputs:
+  template:
+    description: "Path to the CloudFormation template to validate"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: "AWS CloudFormation Validate Template"
+      shell: bash
+      run: /usr/local/aws-cli/v2/current/bin/aws cloudformation validate-template --template-body "file://$TEMPLATE"
+      env:
+        TEMPLATE: "${{inputs.template}}"

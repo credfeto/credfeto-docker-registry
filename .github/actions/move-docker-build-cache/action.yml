@@ -1,0 +1,13 @@
+--- # Rotate the local buildx build cache into place after a successful build
+# Maintain in repo: funfair-server-template
+name: "Move Docker Build Cache"
+description: "Rotates the local buildx build cache into place after a successful build"
+
+runs:
+  using: composite
+  steps:
+    - name: "Move docker build cache"
+      shell: bash
+      run: |
+        rm -rf "$RUNNER_TEMP/.buildx-cache"
+        mv "$RUNNER_TEMP/.buildx-cache-new" "$RUNNER_TEMP/.buildx-cache"

@@ -16,7 +16,7 @@ Please ADD ALL Changes to the UNRELEASED SECTION and not a specific release
 - Invalid ':r' volume mode in docker-compose.yml corrected to ':ro' so the volumes mount read-only as intended
 ### Changed
 - Watchtower now removes old images after updating containers (WATCHTOWER_CLEANUP=true)
-- Watchtower schedule is now configurable with WATCHTOWER_SCHEDULE (default: daily at 18:00) instead of the fixed WATCHTOWER_POLL_INTERVAL
+- Watchtower schedule is now configurable with WATCHTOWER_SCHEDULE (default: hourly at 18 minutes past the hour) instead of the fixed WATCHTOWER_POLL_INTERVAL
 ### Deprecated
 ### Removed
 ### Deployment Changes

@@ -10,6 +10,7 @@ Please ADD ALL Changes to the UNRELEASED SECTION and not a specific release
 
 ## [Unreleased]
 ### Security
+- Host firewall lockdown for ingress and egress (`firewall/configure`, run by `update`): an nftables table lets only the reverse proxies reach the published cache port, and firewalld policies limit what the host and the containers may connect to, with CDN-fronted destinations kept in ipsets refreshed every 10 minutes. `registry-firewall-sync.timer` re-applies it when the firewall config changes, and the daily `Repo: Update egress ranges` workflow refreshes the GitHub and Cloudflare ranges. Observation mode (log unmatched traffic, drop nothing) until `REGISTRY_FIREWALL_ENFORCE=true`
 ### Added
 - Example environment file (.env.example) and a README Configuration section documenting the available settings
 ### Fixed

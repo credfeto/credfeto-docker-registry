@@ -31,16 +31,16 @@ Watchtower removes superseded images after each update (`WATCHTOWER_CLEANUP`).
 | Filter                                 | Traffic                     | Allowed                                                                                                                                                                       |
 |----------------------------------------|-----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `reg_ingress` (nftables)               | LAN -> published port       | the cache (tcp 8081) from the reverse proxies only, since every host reaches it as `docker-cache.markridgwell.com` through Traefik                                            |
-| `reg-egress` (firewalld policy)        | host -> anywhere            | DNS to the fleet's DNS servers, NTP to the router, HTTPS to the proxies, journald uploads to monitoring, GitHub, ghcr.io, Docker Hub, Cloudflare, chaotic-aur, pkgstats, the Arch WKD, ICMP |
-| `reg-egress-docker` (firewalld policy) | containers -> outside world | DNS, HTTPS to the proxies, Docker Hub and Cloudflare (the cache's upstream and Watchtower), the Alpine CDN (`cache-gc` installs curl and jq when it starts)                    |
+| `host_out` (nftables `reg_egress`)     | host -> anywhere            | DNS to the fleet's DNS servers, NTP to the router, HTTPS to the proxies, journald uploads to monitoring, GitHub, ghcr.io, Docker Hub, Cloudflare, chaotic-aur, pkgstats, the Arch WKD, ICMP |
+| `docker_fwd` (nftables `reg_egress`)   | containers -> outside world | DNS, HTTPS to the proxies, Docker Hub and Cloudflare (the cache's upstream and Watchtower), the Alpine CDN (`cache-gc` installs curl and jq when it starts)                    |
 
 SSH to the host is left to the host's base configuration. The zone rules `update` adds for ports 8008, 8080 and 8081 do not filter the published container port (Docker translates it before firewalld's rules run); the host firewall does.
 
-Ingress is an nftables table of its own (`firewall/ingress.nft.template`, loaded by `registry-ingress-firewall.service` before Docker starts) because firewalld accepts Docker's translated traffic before its policies run.
+Ingress is an nftables table of its own (`firewall/ingress.nft.template`, loaded by `registry-ingress-firewall.service` before Docker starts) because firewalld accepts Docker's translated traffic before its policies run. Egress is a table of its own too: the whole table, address sets included, is replaced in a single `nft -f` transaction, so a refresh never makes firewalld reload, and a ruleset that fails to load leaves the previous one in place.
 
 Two timers keep it current:
 
-* `registry-egress-refresh.timer` (every 10 minutes) refreshes the firewalld ipsets for destinations without a stable address: names resolved from DNS, plus GitHub's and Cloudflare's published ranges (`firewall/github-egress-ranges` and `firewall/cloudflare-egress-ranges`).
+* `registry-egress-refresh.timer` (30 seconds after boot, then every 10 minutes) rebuilds the table's address sets for destinations without a stable address: names resolved from DNS (a name that does not resolve keeps its last good addresses), plus GitHub's and Cloudflare's published ranges (`firewall/github-egress-ranges` and `firewall/cloudflare-egress-ranges`). It only loads the table when it differs from the loaded one.
 * `registry-firewall-sync.timer` (every 15 minutes) pulls the checkout and re-runs `firewall/configure` when anything under `firewall/` changed since the commit it last applied. Container changes still wait for `update`.
 
 The `Repo: Update egress ranges` workflow regenerates the two range files daily and commits any change to main, refusing a list that has shrunk by more than a fifth.
@@ -51,4 +51,8 @@ The `Repo: Update egress ranges` workflow regenerates the two range files daily 
 sudo journalctl -k --since -1d | grep -E 'reg-[a-z-]+-unmatched'
 ```
 
-then set `REGISTRY_FIREWALL_ENFORCE=true` and run `./update`. Every host pulls images through this cache, so check `curl -fsS https://docker-cache.markridgwell.com/v2/` from another host straight after enforcing.
+then set `REGISTRY_FIREWALL_ENFORCE=true` and run `./update`. Every host pulls images through this cache, so check `curl -fsS https://docker-cache.markridgwell.com/v2/` from another host straight after enforcing. To see the live egress rules:
+
+```sh
+sudo nft list table inet reg_egress
+```

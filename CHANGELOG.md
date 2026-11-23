@@ -19,6 +19,7 @@ Please ADD ALL Changes to the UNRELEASED SECTION and not a specific release
 ### Changed
 - Watchtower now removes old images after updating containers (WATCHTOWER_CLEANUP=true)
 - Watchtower schedule is now configurable with WATCHTOWER_SCHEDULE (default: hourly at 18 minutes past the hour) instead of the fixed WATCHTOWER_POLL_INTERVAL
+- The host egress firewall is now one nftables table (`inet reg_egress`) loaded atomically by `firewall/egress`, instead of firewalld policies and ipsets: the 10-minute refresh reloaded firewalld, and a firewalld killed mid-reload (by the OOM killer) left its block-everything table in place and cut the host off. `firewall/configure` removes the old policies and ipsets with one last reload
 ### Deprecated
 ### Removed
 ### Deployment Changes

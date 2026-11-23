@@ -1,6 +1,11 @@
 #! /bin/sh
 
-git pull
+# sh has already parsed this script, so changes the pull brings to it would
+# only take effect on the next run. Re-run the freshly pulled copy once.
+if [ "${UPDATE_ALREADY_PULLED:-}" != "1" ]; then
+    git pull
+    UPDATE_ALREADY_PULLED=1 exec "$(readlink -f "$0")" "$@"
+fi
 
 [ -d /data/registry ] || sudo mkdir -p /data/registry
 [ -d /data/cache ] || sudo mkdir -p /data/cache

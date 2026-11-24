@@ -16,6 +16,8 @@ Please ADD ALL Changes to the UNRELEASED SECTION and not a specific release
 ### Added
 - Example environment file (.env.example) and a README Configuration section documenting the available settings
 ### Fixed
+- Firewall: Docker Hub's CloudFront blob CDN (`production.cloudfront.docker.com`) is allowed for the host and the cache container; with enforcement on, cold cache fills that Docker Hub redirected there timed out
+- Firewall: egress runs take a lock and write the resolved-address cache to a unique temporary file, so the refresh timer and the firewall sync starting in the same second no longer fail with FileNotFoundError
 - Firewall: resolved destinations (Docker Hub, ghcr.io and the other CDN-fronted names) stay allowed for 7 days after they were last seen instead of only the latest DNS answer, so direct Docker Hub pulls when the docker-cache mirror is down are not dropped because the registry answered with a different part of its address pool
 - `./update` now re-runs itself after `git pull`, so changes to the update script take effect on the same run instead of the next one
 - Invalid ':r' volume mode in docker-compose.yml corrected to ':ro' so the volumes mount read-only as intended

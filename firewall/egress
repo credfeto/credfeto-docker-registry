@@ -29,6 +29,7 @@ anything else only logs them ("reg-egress-unmatched: " and
 import ipaddress
 import json
 import os
+import fcntl
 import socket
 import subprocess
 import sys
@@ -66,6 +67,8 @@ DOMAINS = {
     "dhreg": "registry-1.docker.io",
     "dhauth": "auth.docker.io",
     "dhcdn": "production.cloudflare.docker.com",
+    # Docker Hub also redirects blob downloads to its CloudFront CDN.
+    "dhcf": "production.cloudfront.docker.com",
     "alpine": "dl-cdn.alpinelinux.org",
 }
 # Published ranges, shipped in the repo and regenerated daily by the
@@ -77,11 +80,11 @@ RANGES = {
 
 # The host pulls images itself (through the mirror, falling back to Docker Hub
 # and ghcr.io directly).
-HOST_HTTPS_SETS = ["github", "ghnet", "cfnet", "chaotic", "pkgstats", "archwkd", "ghcr", "ghcrpkg", "dhreg", "dhauth", "dhcdn"]
+HOST_HTTPS_SETS = ["github", "ghnet", "cfnet", "chaotic", "pkgstats", "archwkd", "ghcr", "ghcrpkg", "dhreg", "dhauth", "dhcdn", "dhcf"]
 # The cache proxies Docker Hub (registry-1.docker.io, auth.docker.io, and the
 # Cloudflare-fronted blob CDN), Watchtower checks Docker Hub for new images,
 # and cache-gc installs curl and jq from the Alpine CDN each time it starts.
-CONTAINER_HTTPS_SETS = ["cfnet", "dhreg", "dhauth", "dhcdn", "alpine"]
+CONTAINER_HTTPS_SETS = ["cfnet", "dhreg", "dhauth", "dhcdn", "dhcf", "alpine"]
 
 NAT64 = ipaddress.ip_network("64:ff9b::/96")
 
@@ -171,8 +174,8 @@ def gather_sets():
             log(f"{path} unreadable ({e}); {slug} is empty")
             sets[slug] = ([], [])
     os.makedirs(STATE_DIR, exist_ok=True)
-    tmp = CACHE_FILE + ".tmp"
-    with open(tmp, "w") as f:
+    fd, tmp = tempfile.mkstemp(dir=STATE_DIR, suffix=".json")
+    with os.fdopen(fd, "w") as f:
         json.dump(resolved, f, indent=1, sort_keys=True)
     os.replace(tmp, CACHE_FILE)
     return sets
@@ -293,6 +296,11 @@ def loaded():
 def main():
     if os.geteuid() != 0:
         sys.exit("egress: must run as root")
+    # The refresh timer and the firewall sync can start in the same second;
+    # run one at a time so they never race over the cache or the load.
+    os.makedirs(STATE_DIR, exist_ok=True)
+    lock = open(os.path.join(STATE_DIR, "egress.lock"), "w")
+    fcntl.flock(lock, fcntl.LOCK_EX)
     try:
         with open(ENFORCE_FILE) as f:
             enforce = f.read().strip() == "true"
